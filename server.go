@@ -16,10 +16,11 @@ func main() {
 
 	// Functionality Endpoints
 	write := router.Group("", auth.AuthorizeRequest("write-state", "room", auth.LookupResourceFromAddress))
+	write.GET("/:address/activate/:contact", handlers.ActivateContact)
 
 	// Status/Hardware Info Endpoints
 	read := router.Group("", auth.AuthorizeRequest("read-state", "room", auth.LookupResourceFromAddress))
-	read.GET("/:address/deviceInfo", handlers.getDevices)
+	read.GET("/:address/deviceInfo", handlers.GetDevices)
 
 	// log level endpoints
 	router.PUT("/log-level/:level", log.SetLogLevel)
