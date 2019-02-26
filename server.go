@@ -20,7 +20,7 @@ func main() {
 
 	// Status/Hardware Info Endpoints
 	read := router.Group("", auth.AuthorizeRequest("read-state", "room", auth.LookupResourceFromAddress))
-	read.GET("/:address/deviceInfo", handlers.GetDevices)
+	read.GET("/:address/hardware", handlers.HardwareInfo)
 
 	// log level endpoints
 	router.PUT("/log-level/:level", log.SetLogLevel)

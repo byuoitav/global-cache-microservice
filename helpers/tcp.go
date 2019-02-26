@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"bufio"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -117,17 +118,25 @@ func getConnection(address string) (*net.TCPConn, *nerr.E) {
 }
 
 // SendCommand will be responsible for sending a command to the device
-func SendCommand(command []byte, address string) error {
+func SendCommand(command []byte, address string) ([]byte, *nerr.E) {
 	log.L.Debugf("Sending command %s, to %v", command, address)
 
 	// OPEN THE GATES
 	conn, err := getConnection(address)
 	if err != nil {
-		log.L.Errorf("Failed to establish connection with %s : %s", address, err.Error())
+		return []byte{}, err.Addf("Could not send command")
 	}
 
-	conn.Write(command + "\r\n")
+	conn.SetWriteDeadline(time.Now().Add(3 * time.Second))
 
+	commandSent, commandError := conn.Write(command + "\r\n")
+	if commandError != nil {
+		return []byte{}, nerr.Translate(err).Addf("Error in sending command")
+	}
+
+	bufio.NewReader()
 	// CLOSE THE GATES
 	defer conn.Close()
+
+	return resp, nil
 }
