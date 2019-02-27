@@ -2,16 +2,11 @@ package helpers
 
 import (
 	"bufio"
-	"crypto/tls"
-	"errors"
-	"fmt"
 	"net"
 	"time"
 
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/nerr"
-
-	telnet "github.com/reiver/go-telnet"
 )
 
 var errorCodes = map[string]string{
@@ -51,55 +46,6 @@ const (
 	DELAY_BETWEEN_CONNECTIONS = time.Second * 10
 )
 
-var tlsConfig *tls.Config
-var caller telnet.Caller
-
-func init() {
-	tlsConfig = &tls.Config{}
-}
-
-func readUntil(delimeter byte, conn *net.TCPConn, timeoutInSeconds int) ([]byte, error) {
-	conn.SetReadDeadline(time.Now().Add(time.Duration(int64(timeoutInSeconds)) * time.Second))
-
-	buffer := make([]byte, 128)
-	message := []byte{}
-
-	for !charInBuffer(delimeter, buffer) {
-		_, err := conn.Read(buffer)
-		if err != nil {
-			err = errors.New(fmt.Sprintf("Error reading response: %s", err.Error()))
-			log.L.Infof("%s", err.Error())
-			return message, err
-		}
-
-		message = append(message, buffer...)
-	}
-
-	return removeNil(message), nil
-}
-
-func removeNil(b []byte) (ret []byte) {
-	for _, c := range b {
-		switch c {
-		case '\x00':
-			break
-		default:
-			ret = append(ret, c)
-		}
-	}
-	return ret
-}
-
-func charInBuffer(toCheck byte, buffer []byte) bool {
-	for _, b := range buffer {
-		if toCheck == b {
-			return true
-		}
-	}
-
-	return false
-}
-
 // getConnection establishes a TCP connection with the global cache system
 func getConnection(address string) (*net.TCPConn, *nerr.E) {
 	log.L.Debugf("Getting connection for %v", address)
@@ -129,12 +75,23 @@ func SendCommand(command []byte, address string) ([]byte, *nerr.E) {
 
 	conn.SetWriteDeadline(time.Now().Add(3 * time.Second))
 
-	commandSent, commandError := conn.Write(command + "\r\n")
+	// endCommand := make([]byte, 16)
+
+	commandSent, commandError := conn.Write(command)
+	if commandSent != len(command) {
+		return []byte{}, err.Addf("The command written was not the same length as the given command")
+	}
 	if commandError != nil {
 		return []byte{}, nerr.Translate(err).Addf("Error in sending command")
 	}
 
-	bufio.NewReader()
+	// Make a new reader from the connection
+	reader := bufio.NewReader(conn)
+
+	resp, resperr := reader.ReadBytes('\n')
+	if resperr != nil {
+		return []byte{}, err.Add("Error in getting response back")
+	}
 	// CLOSE THE GATES
 	defer conn.Close()
 

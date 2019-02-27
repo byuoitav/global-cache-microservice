@@ -6,7 +6,7 @@ import (
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/status"
 	"github.com/byuoitav/common/structs"
-	"github.com/byuoitav/gefen-control-microservice/helpers"
+	"github.com/byuoitav/global-cache-microservice/helpers"
 
 	"github.com/labstack/echo"
 )
@@ -34,9 +34,9 @@ func ActivateContact(context echo.Context) error {
 // HardwareInfo will get the hardware information of the iTach Device
 func HardwareInfo(context echo.Context) error {
 	address := context.Param("address")
-	log.L.Infof("Getting Hardware Info for")
+	log.L.Infof("Getting Hardware Info for %v...", address)
 
-	ipaddr, versionNum, err := helpers.GetHardware(address)
+	ipaddr, versionNum, err := helpers.GetHardwareInfo(address)
 	if err != nil {
 		log.L.Errorf("Failed to get Hardware Info")
 		return context.JSON(http.StatusInternalServerError, err)
