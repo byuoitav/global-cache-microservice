@@ -45,6 +45,7 @@ const (
 	SPACE                     = 0x20
 	DELAY_BETWEEN_CONNECTIONS = time.Second * 10
 )
+const TIMEOUT_IN_SECONDS = 2.0
 
 // getConnection establishes a TCP connection with the global cache system
 func getConnection(address string) (*net.TCPConn, *nerr.E) {
@@ -65,35 +66,35 @@ func getConnection(address string) (*net.TCPConn, *nerr.E) {
 
 // SendCommand will be responsible for sending a command to the device
 func SendCommand(command []byte, address string) ([]byte, *nerr.E) {
-	log.L.Debugf("Sending command %s, to %v", command, address)
+	log.L.Infof("Sending command %s, to %v", command, address)
 
 	// OPEN THE GATES
 	conn, err := getConnection(address)
 	if err != nil {
 		return []byte{}, err.Addf("Could not send command")
 	}
+	defer conn.Close()
+	reader := bufio.NewReader(conn)
 
-	conn.SetWriteDeadline(time.Now().Add(3 * time.Second))
+	conn.SetReadDeadline(time.Now().Add(time.Duration(TIMEOUT_IN_SECONDS) * time.Second))
 
-	// endCommand := make([]byte, 16)
+	commandToSend := append(command, CARRIAGE_RETURN)
 
-	commandSent, commandError := conn.Write(command)
+	log.L.Infof("Command being sent: %s", commandToSend)
+
+	commandSent, commandError := conn.Write(commandToSend)
+	//Check to see if the lengths were the same
 	if commandSent != len(command) {
-		return []byte{}, err.Addf("The command written was not the same length as the given command")
+		return []byte{}, nerr.Create("", "The command written was not the same length as the given command")
 	}
 	if commandError != nil {
 		return []byte{}, nerr.Translate(err).Addf("Error in sending command")
 	}
 
-	// Make a new reader from the connection
-	reader := bufio.NewReader(conn)
-
-	resp, resperr := reader.ReadBytes('\n')
+	resp, resperr := reader.ReadBytes('\x00')
 	if resperr != nil {
 		return []byte{}, err.Add("Error in getting response back")
 	}
-	// CLOSE THE GATES
-	defer conn.Close()
 
 	return resp, nil
 }
