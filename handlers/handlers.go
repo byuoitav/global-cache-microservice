@@ -24,11 +24,33 @@ func GetDevices(context echo.Context) error {
 // ActivateContact will turn on the specified contact closure of the device
 func ActivateContact(context echo.Context) error {
 
-	address := context.Param("address") //Get teh address of the iTach
-	contactNum := context.Param("contact")
+	address := context.Param("address")    //Get teh address of the iTach
+	contactNum := context.Param("contact") //Which contact is trying to be activated
 	log.L.Infof("Activating contact %v on %v", contactNum, address)
 
-	return context.JSON(http.StatusOK, status.Input{Input: "yay"})
+	activatedContact, err := helpers.TurnContactOn(address, contactNum)
+	if err != nil {
+		log.L.Errorf("Unable to turn contact on")
+		return context.JSON(http.StatusInternalServerError, err)
+	}
+
+	return context.JSON(http.StatusOK, status.Input{Input: activatedContact})
+}
+
+// DeactivateContact will turn off the specified contact closure of the device
+func DeactivateContact(context echo.Context) error {
+
+	address := context.Param("address")    //Get teh address of the iTach
+	contactNum := context.Param("contact") //Which contact is trying to be activated
+	log.L.Infof("Dectivating contact %v on %v", contactNum, address)
+
+	deactivatedContact, err := helpers.TurnContactOff(address, contactNum)
+	if err != nil {
+		log.L.Errorf("Unable to turn contact off")
+		return context.JSON(http.StatusInternalServerError, err)
+	}
+
+	return context.JSON(http.StatusOK, status.Input{Input: deactivatedContact})
 }
 
 // HardwareInfo will get the hardware information of the iTach Device

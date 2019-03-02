@@ -41,12 +41,11 @@ var errorCodes = map[string]string{
 }
 
 const (
-	CARRIAGE_RETURN           = 0x0D
-	LINE_FEED                 = 0x0A
-	SPACE                     = 0x20
-	DELAY_BETWEEN_CONNECTIONS = time.Second * 10
+	carriageReturn = 0x0D // carriageReturn is Hex value for a carriage return to append at the end of the command
+	lineFeed       = 0x0A
+	SPACE          = 0x20
 )
-const TIMEOUT_IN_SECONDS = 2.0
+const timeoutInSeconds = 2.0
 
 // getConnection establishes a TCP connection with the global cache system
 func getConnection(address string) (*net.TCPConn, *nerr.E) {
@@ -75,28 +74,24 @@ func SendCommand(command []byte, address string) ([]byte, *nerr.E) {
 		return []byte{}, err.Addf("Could not send command")
 	}
 	defer conn.Close()
+
+	// Reader is what will be reading the i/o stream
 	reader := bufio.NewReader(conn)
 
-	// conn.SetReadDeadline(time.Now().Add(time.Duration(TIMEOUT_IN_SECONDS) * time.Second))
-	// resp, resperr := reader.ReadBytes('\n')
-	// if resperr != nil {
-	// 	return []byte{}, nerr.Translate(resperr)
-	// }
-
-	commandToSend := append(command, CARRIAGE_RETURN)
+	// This is the command we will be sending
+	commandToSend := append(command, carriageReturn)
 
 	conn.Write(commandToSend)
 	//Check to see if the lengths were the same
 
-	conn.SetReadDeadline(time.Now().Add(time.Duration(TIMEOUT_IN_SECONDS) * time.Second))
-	resp, resperr := reader.ReadBytes('\n')
+	// Read over the connection to get a response (resp) back. resperr is the error to check for
+	conn.SetReadDeadline(time.Now().Add(time.Duration(timeoutInSeconds) * time.Second))
+	resp, resperr := reader.ReadBytes('\r')
 	if resperr != nil {
 		log.L.Infof(color.HiRedString("Error: %v", resperr))
 		return []byte{}, nerr.Translate(resperr)
 	}
 
-	log.L.Infof("Sent: %s", commandToSend)
-	log.L.Infof("%s", resp)
-
+	//Misson Complete, get us outta here
 	return resp, nil
 }
