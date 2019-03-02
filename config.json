@@ -1,0 +1,6 @@
+{
+    "name": "gefen-control-microservice",
+    "port": ":8024",
+    "env-vars": [
+    ]
+}
