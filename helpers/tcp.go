@@ -66,7 +66,7 @@ func getConnection(address string) (*net.TCPConn, *nerr.E) {
 }
 
 // SendCommand will be responsible for sending a command to the device
-func SendCommand(command []byte, address string) ([]byte, error) {
+func SendCommand(command []byte, address string) ([]byte, *nerr.E) {
 	log.L.Infof("Sending command %s, to %v", command, address)
 
 	// OPEN THE GATES
@@ -77,11 +77,11 @@ func SendCommand(command []byte, address string) ([]byte, error) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 
-	conn.SetReadDeadline(time.Now().Add(time.Duration(TIMEOUT_IN_SECONDS) * time.Second))
-	resp, resperr := reader.ReadBytes('\x00')
-	if resperr != nil {
-		return []byte{}, resperr
-	}
+	// conn.SetReadDeadline(time.Now().Add(time.Duration(TIMEOUT_IN_SECONDS) * time.Second))
+	// resp, resperr := reader.ReadBytes('\n')
+	// if resperr != nil {
+	// 	return []byte{}, nerr.Translate(resperr)
+	// }
 
 	commandToSend := append(command, CARRIAGE_RETURN)
 
@@ -89,10 +89,10 @@ func SendCommand(command []byte, address string) ([]byte, error) {
 	//Check to see if the lengths were the same
 
 	conn.SetReadDeadline(time.Now().Add(time.Duration(TIMEOUT_IN_SECONDS) * time.Second))
-	resp, resperr = reader.ReadBytes('\x00')
+	resp, resperr := reader.ReadBytes('\n')
 	if resperr != nil {
-		log.L.Infof(color.HiRedString("Error: %v", err.Error()))
-		return []byte{}, err
+		log.L.Infof(color.HiRedString("Error: %v", resperr))
+		return []byte{}, nerr.Translate(resperr)
 	}
 
 	log.L.Infof("Sent: %s", commandToSend)
