@@ -22,6 +22,7 @@ func main() {
 	// Status/Hardware Info Endpoints
 	read := router.Group("", auth.AuthorizeRequest("read-state", "room", auth.LookupResourceFromAddress))
 	read.GET("/:address/hardware", handlers.HardwareInfo)
+	read.GET("/:address/contact/status/:contact", handlers.ContactStatus)
 
 	// log level endpoints
 	router.PUT("/log-level/:level", log.SetLogLevel)

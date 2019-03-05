@@ -53,6 +53,21 @@ func DeactivateContact(context echo.Context) error {
 	return context.JSON(http.StatusOK, status.Input{Input: deactivatedContact})
 }
 
+// ContactStatus will get the status of one of the contacts, either on or off
+func ContactStatus(context echo.Context) error {
+	address := context.Param("address")    //Get the address of the iTach
+	contactNum := context.Param("contact") //Which contact are we getting the status of
+	log.L.Infof("Getting status of contact %v on %v", contactNum, address)
+
+	contactStatus, err := helpers.GetContactStatus(address, contactNum)
+	if err != nil {
+		log.L.Errorf("Unable to get Contact Stauts")
+		return context.JSON(http.StatusInternalServerError, err)
+	}
+
+	return context.JSON(http.StatusOK, status.Input{Input: contactStatus})
+}
+
 // HardwareInfo will get the hardware information of the iTach Device
 func HardwareInfo(context echo.Context) error {
 	address := context.Param("address")
