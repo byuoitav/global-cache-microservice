@@ -86,3 +86,14 @@ func HardwareInfo(context echo.Context) error {
 		FirmwareVersion: versionNum,
 	})
 }
+
+//TODO: Future implementation of these functions to raise and lower a projector screen?
+// Or will that be the job of another microservice??
+//
+// func RaiseScreen()  {
+
+// }
+
+// func LowerScreen()  {
+
+// }
