@@ -1,7 +1,11 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/common/status"
@@ -51,6 +55,65 @@ func DeactivateContact(context echo.Context) error {
 	}
 
 	return context.JSON(http.StatusOK, status.Input{Input: deactivatedContact})
+}
+
+// CommandList will parse the parameter in AX,DX,AY,DY.... (A = activate, D = deactivate, X,Y = contact numbers) format and perform multiple activations and deactivations
+func CommandList(context echo.Context) error {
+	address := context.Param("address")         //Get the address of the iTach
+	commandList := context.Param("commandList") //get the parameter
+	log.L.Infof("Command List Received - %v", commandList)
+
+	commands := strings.Split(commandList, ",")
+
+	//validate first
+	for _, cmd := range commands {
+		_, err := strconv.Atoi(cmd[1:])
+		log.L.Infof("Running command %v", cmd)
+		if err != nil {
+			log.L.Infof("Invalid input %v", cmd)
+			return context.JSON(http.StatusInternalServerError, fmt.Sprintf("Invalid input %v", cmd))
+		}
+
+		activateDeactivate := cmd[0]
+
+		if activateDeactivate != 'D' && activateDeactivate != 'A' && activateDeactivate != 'W' {
+			log.L.Infof("Invalid input %v", cmd)
+			return context.JSON(http.StatusInternalServerError, fmt.Sprintf("Invalid input %v", cmd))
+		}
+	}
+
+	//now execute
+	for _, cmd := range commands {
+		contactNum := cmd[1:]
+
+		if cmd[0] == 'A' {
+			log.L.Infof("Activating contact %v on %v", contactNum, address)
+
+			_, err := helpers.TurnContactOn(address, contactNum)
+			if err != nil {
+				log.L.Errorf("Unable to turn contact %v on", contactNum)
+				return context.JSON(http.StatusInternalServerError, err)
+			}
+		} else if cmd[0] == 'D' {
+			log.L.Infof("Deactivating contact %v on %v", contactNum, address)
+
+			_, err := helpers.TurnContactOff(address, contactNum)
+			if err != nil {
+				log.L.Errorf("Unable to turn contact %v off", contactNum)
+				return context.JSON(http.StatusInternalServerError, err)
+			}
+		} else if cmd[0] == 'W' {
+			log.L.Infof("Waiting for %v milliseconds", contactNum)
+
+			contactNumMS, _ := strconv.Atoi(cmd[1:])
+
+			time.Sleep(time.Duration(contactNumMS) * time.Millisecond)
+		} else {
+			return context.JSON(http.StatusInternalServerError, fmt.Sprintf("Invalid input %v", cmd))
+		}
+	}
+
+	return context.JSON(http.StatusOK, "Executed commands "+commandList)
 }
 
 // ContactStatus will get the status of one of the contacts, either on or off

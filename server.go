@@ -18,6 +18,7 @@ func main() {
 	write := router.Group("", auth.AuthorizeRequest("write-state", "room", auth.LookupResourceFromAddress))
 	write.GET("/:address/activate/:contact", handlers.ActivateContact)
 	write.GET("/:address/deactivate/:contact", handlers.DeactivateContact)
+	write.GET("/:address/commands/:commandList", handlers.CommandList)
 
 	// Status/Hardware Info Endpoints
 	read := router.Group("", auth.AuthorizeRequest("read-state", "room", auth.LookupResourceFromAddress))
